@@ -5,100 +5,53 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fortune Chat</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-
-        .chat-container {
-            width: 700px;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            background-color: #fff;
-        }
-
-        .chat-header {
-            background-color: #007bff;
-            color: #fff;
-            padding: 10px;
-            text-align: center;
-            font-weight: bold;
-        }
-
-        .chat-messages {
-            padding: 10px;
-            list-style-type: none;
-            margin: 0;
-            overflow-y: auto;
-            height: 500px;
-        }
-
-        .message-container {
-            margin-bottom: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            padding: 0 10px;
-        }
-
-        .message {
-            background-color: #f2f2f2;
-            padding: 8px 12px;
-            border-radius: 10px;
-            word-break: break-all;
-            margin-bottom: 5px;
-            max-width: 70%;
-        }
-
-        .bot-message {
-            background-color: #007bff;
-            color: #fff;
-            border-radius: 10px;
-            margin-left: auto;
-        }
-
-        .message-text {
-            display: inline-block;
-        }
-
-        .message-input {
-            width: calc(100% - 20px);
-            padding: 10px;
-            box-sizing: border-box;
-            border: none;
-            border-top: 1px solid #ccc;
-            outline: none;
-            border-radius: 0 0 10px 10px;
-            margin: 0;
-        }
-
-        .send-button {
-            width: calc(100% - 20px);
-            padding: 10px;
-            box-sizing: border-box;
-            background-color: #007bff;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            outline: none;
-            border-radius: 0 0 10px 10px;
-            margin: 0;
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
-    <div class="chat-container">
+    <div id="intro" class="intro-container">
+        <h1>운세를 알려드립니다.</h1>
+        <img src="./img/fortune.png" alt="image">
+        <label for="date">생년월일</label>
+        <input id="date" type="date">
+        <label for="hour">태어난 시간</label>
+        <select id="hour">
+            <option value="">모름</option>
+            <option value="00">00</option>
+            <option value="01">01</option>
+            <option value="02">02</option>
+            <option value="03">03</option>
+            <option value="04">04</option>
+            <option value="05">05</option>
+            <option value="06">06</option>
+            <option value="07">07</option>
+            <option value="08">08</option>
+            <option value="09">09</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+            <option value="13">13</option>
+            <option value="14">14</option>
+            <option value="15">15</option>
+            <option value="16">16</option>
+            <option value="17">17</option>
+            <option value="18">18</option>
+            <option value="19">19</option>
+            <option value="20">20</option>
+            <option value="21">21</option>
+            <option value="22">22</option>
+            <option value="23">23</option>
+        </select>
+        <button onclick="start()">오늘의 운세보기</button>
+    </div>
+
+    <div id="chat"class="chat-container" style="display: none;">
         <div class="chat-header">오늘의 운세를 확인해보세요.</div>
         <ul class="chat-messages" id="chat-messages"></ul>
+        <div id="loader" class="loader" style="display: none;">
+            <i class="loading-icon fas fa-spinner fa-spin"></i>
+        </div>
         <div class="message-container">
             <input type="text" class="message-input" id="user-input" placeholder="오늘의 운세를 질문해보세요.">
             <button class="send-button" onclick="sendMessage()">보내기</button>
@@ -106,9 +59,32 @@
     </div>
 
     <script>
+        // 채팅 누적
+        let userMessages = [];
+        let assistantMessages = [];
+
+        let myDateTime = '';
+
+        function start() {
+            const date = document.getElementById('date').value;
+            const hour = document.getElementById('hour').value;
+            
+            if (date === ''){
+                alert('생년월일을 입력해 주세요.');
+                return;
+            }
+            myDateTime = date + hour;
+            // console.log(myDateTime);
+
+            document.getElementById('intro').style.display = "none";
+            document.getElementById('chat').style.display = "block";
+        }
+
+        // 메시지 가져옴
         const chatMessages = document.getElementById('chat-messages');
         const userInput = document.getElementById('user-input');
-
+        
+        //--------------------------------------------------------------
         function displayMessage(message, isBot = false) {
             const messageClass = isBot ? 'message bot-message' : 'message';
             const li = document.createElement('li');
@@ -122,24 +98,35 @@
             chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to bottom
         }
 
-        // 채팅 누적
-        let userMessages = [];
-        let assistantMessages = [];
-
+        //--------------------------------------------------------------
         async function sendMessage() {
+            //로딩 스피너 아이콘 보여주기
+            document.getElementById('loader').style.display = "block";
+
             const userMessage = userInput.value.trim();
             if (userMessage === '') return;
 
             displayMessage(userMessage); // 사용자의 메시지
 
+            //Push
+            userMessages.push(userInput.value);
+            
+            // //입력 필드 초기화
+            // messageInput.value = '';
+
             // 백엔드 서버에 메시지를 보내고 응답 출력
+            // JSON.stringify : javascript 객체 => json
             try {
                 const response = await fetch('http://localhost:3000/fortune', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ message: userMessage })
+                    body: JSON.stringify({
+                        myDateTime: myDateTime,
+                        userMessages: userMessages,
+                        assistantMessages: assistantMessages,
+                    })
                 });
 
                 if (!response.ok) {
@@ -147,10 +134,15 @@
                 }
 
                 const data = await response.json();
+
+                //로딩 스피너 아이콘 숨기기
+                document.getElementById('loader').style.display = "none";
+
                 displayMessage(data.assistant, true); // open ai의 답변 채팅
 
-                // assistantMessages에 GPT의 메시지 저장
+                // assistantMessages에 GPT의 메시지들을 저장
                 assistantMessages.push(data.assistant);
+                // 1, 2번 입력했을 때 사용자의 메시지와 챗GPT의 바로 이전 응답이 누적되어 출력
 
             } catch (error) {
                 console.error('Error:', error);
