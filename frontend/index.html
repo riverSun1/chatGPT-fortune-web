@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fortune Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .chat-container {
+            width: 700px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+        }
+
+        .chat-header {
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .chat-messages {
+            padding: 10px;
+            list-style-type: none;
+            margin: 0;
+            overflow-y: auto;
+            height: 500px;
+        }
+
+        .message-container {
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 0 10px;
+        }
+
+        .message {
+            background-color: #f2f2f2;
+            padding: 8px 12px;
+            border-radius: 10px;
+            word-break: break-all;
+            margin-bottom: 5px;
+            max-width: 70%;
+        }
+
+        .bot-message {
+            background-color: #007bff;
+            color: #fff;
+            border-radius: 10px;
+            margin-left: auto;
+        }
+
+        .message-text {
+            display: inline-block;
+        }
+
+        .message-input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            box-sizing: border-box;
+            border: none;
+            border-top: 1px solid #ccc;
+            outline: none;
+            border-radius: 0 0 10px 10px;
+            margin: 0;
+        }
+
+        .send-button {
+            width: calc(100% - 20px);
+            padding: 10px;
+            box-sizing: border-box;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            outline: none;
+            border-radius: 0 0 10px 10px;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chat-container">
+        <div class="chat-header">오늘의 운세를 확인해보세요.</div>
+        <ul class="chat-messages" id="chat-messages"></ul>
+        <div class="message-container">
+            <input type="text" class="message-input" id="user-input" placeholder="오늘의 운세를 질문해보세요.">
+            <button class="send-button" onclick="sendMessage()">보내기</button>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chat-messages');
+        const userInput = document.getElementById('user-input');
+
+        function displayMessage(message, isBot = false) {
+            const messageClass = isBot ? 'message bot-message' : 'message';
+            const li = document.createElement('li');
+            li.className = 'message-container';
+            li.innerHTML = `
+                <div class="message ${messageClass}">
+                    <span class="message-text">${message}</span>    
+                </div>
+            `;
+            chatMessages.appendChild(li);
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to bottom
+        }
+
+        // 채팅 누적
+        let userMessages = [];
+        let assistantMessages = [];
+
+        async function sendMessage() {
+            const userMessage = userInput.value.trim();
+            if (userMessage === '') return;
+
+            displayMessage(userMessage); // 사용자의 메시지
+
+            // 백엔드 서버에 메시지를 보내고 응답 출력
+            try {
+                const response = await fetch('http://localhost:3000/fortune', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: userMessage })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Request failed with status ' + response.status);
+                }
+
+                const data = await response.json();
+                displayMessage(data.assistant, true); // open ai의 답변 채팅
+
+                // assistantMessages에 GPT의 메시지 저장
+                assistantMessages.push(data.assistant);
+
+            } catch (error) {
+                console.error('Error:', error);
+                displayMessage('Failed to fetch fortune. Please try again later.', true);
+            }
+
+            // 입력 필드 초기화
+            userInput.value = '';
+        }
+    </script>
+</body>
+
+</html>
